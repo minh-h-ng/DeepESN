@@ -1,0 +1,14 @@
+{
+    "n_internal_units": [101, 102],
+    "spectral_radius": [0.1, 0.2],
+    "connectivity": [0.1, 0.2],
+    "input_scaling": [0.8, 0.9],
+    "input_shift": [0.1, 0.2],
+    "teacher_scaling": 0.3,
+    "teacher_shift": 0.1,
+    "feedback_scaling": [0.1, 0.2],
+    "noise_level": [0.1, 0.2],
+    "regression_method": "ridge",
+    "regression_parameters": 0.001,
+    "n_drop": 100
+}

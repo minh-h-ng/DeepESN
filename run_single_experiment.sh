@@ -18,5 +18,5 @@ RUNS=$5
 #python ./genoptesn.py $DATAFILE $OPTCONFIG $ESNCONFIG $RECONSTRUCTCONFIG --percent_dim
 
 # Run experiments with these parameters
-#python -m scoop -n 8 ./esn_experiment.py $DATAFILE $ESNCONFIG $RECONSTRUCTCONFIG $RUNS
-python ./esn_experiment.py $DATAFILE $ESNCONFIG $RECONSTRUCTCONFIG $RUNS
+python -m scoop -n 8 ./esn_experiment.py $DATAFILE $ESNCONFIG $RECONSTRUCTCONFIG $RUNS
+#python ./esn_experiment.py $DATAFILE $ESNCONFIG $RECONSTRUCTCONFIG $RUNS

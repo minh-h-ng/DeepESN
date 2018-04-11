@@ -78,7 +78,6 @@ class DeepESN(object):
         self._regression_method = None
 
     def fit(self, Xtr, Ytr, n_drop = 100, regression_method = 'linear', regression_parameters = None):
-        print(len(self._esn_list))
         _,_ = self._fit_transform(Xtr = Xtr, Ytr = Ytr,
                                   n_drop = n_drop,
                                   regression_method = regression_method,
@@ -129,10 +128,10 @@ class DeepESN(object):
         states, embedded_states, _ = self._compute_state_matrix(X=Xtr, Y=Ytr, n_drop=n_drop)
 
         # Train output
-        lastESN = self._esn_list[-1]
+        firstESN = self._esn_list[0]
         self._regression_method.fit(np.concatenate(
-            (embedded_states, self._scaleshift(states[n_drop:, :], lastESN._input_scaling, lastESN._input_shift)), axis=1),
-            self._scaleshift(Ytr[n_drop:, :], lastESN._teacher_scaling, lastESN._teacher_shift).flatten())
+            (embedded_states, self._scaleshift(Xtr[n_drop:, :], firstESN._input_scaling, firstESN._input_shift)), axis=1),
+            self._scaleshift(Ytr[n_drop:, :], self._teacher_scaling, self._teacher_shift).flatten())
 
         return states, embedded_states
 
@@ -166,15 +165,20 @@ class DeepESN(object):
         outputs = np.empty((n_data - n_drop, self._dim_output), dtype=float)
 
         # No embedding yet
-        embedded_states = np.empty((n_data - n_drop, self._dim_output), dtype=float)
+        embedded_states = np.empty((n_data - n_drop, lastESN._n_internal_units), dtype=float)
 
         for i in range(n_data):
             for j in range(len(self._esn_list)):
                 curESN = self._esn_list[j]
+                firstESN = self._esn_list[0]
+                data_input = np.atleast_2d(self._scaleshift(X[i, :], firstESN._input_scaling, firstESN._input_shift))
 
                 # Process inputs
                 curESN._reservoir_state = np.atleast_2d(curESN._reservoir_state)
-                if j==len(self._esn_list)-1:
+                if len(self._esn_list)==1:
+                    current_input = np.atleast_2d(self._scaleshift(X[i, :], curESN._input_scaling, curESN._input_shift))
+                    feedback = curESN._feedback_scaling * np.atleast_2d(previous_output)
+                elif j==len(self._esn_list)-1:
                     prevESN = self._esn_list[j-1]
                     current_input = np.atleast_2d(self._scaleshift(prevESN._reservoir_state, curESN._input_scaling, curESN._input_shift))
                     feedback = curESN._feedback_scaling * np.atleast_2d(previous_output)
@@ -189,6 +193,12 @@ class DeepESN(object):
                     feedback = curESN._feedback_scaling * np.atleast_2d(nextESN._reservoir_state)
 
                 # Calculate state. Add noise and apply nonlinearity
+                """print('internal weights:',curESN._internal_weights.shape)
+                print('reservoir:',curESN._reservoir_state.T.shape)
+                print('input weights:',curESN._input_weights.shape)
+                print('current input:',current_input.T.shape)
+                print('feedback weights:',curESN._feedback_weights.shape)
+                print('feedback:',feedback.T.shape)"""
                 state_before_tanh = curESN._internal_weights.dot(curESN._reservoir_state.T) + curESN._input_weights.dot(current_input.T) + \
                                     curESN._feedback_weights.dot(feedback.T)
                 state_before_tanh += np.random.rand(curESN._n_internal_units, 1) * curESN._noise_level
@@ -205,7 +215,7 @@ class DeepESN(object):
                 current_embedding = lastESN._reservoir_state
 
                 # Perform regression
-                previous_output = self._regression_method.predict(np.concatenate((current_embedding,current_input),axis=1))
+                previous_output = self._regression_method.predict(np.concatenate((current_embedding,data_input),axis=1))
 
             # Store everything after the dropout period
             if (i > n_drop - 1):
@@ -341,6 +351,47 @@ def reconstruct_output(arrays,reconstructconfig):
                       reconstructconfig['reconstruct_dim_z']]
     reconstructDelay = [reconstructconfig['reconstruct_delay_x'], reconstructconfig['reconstruct_delay_y'],
                         reconstructconfig['reconstruct_delay_z']]
+    startIndex = 0
+    for i in range(len(reconstructDim)):
+        if (reconstructDim[i] - 1) * reconstructDelay[i] > startIndex:
+            startIndex = (reconstructDim[i] - 1) * reconstructDelay[i]
+    returnVals = []
+    for array in arrays:
+        dataDim = array.shape
+        reconstructed = None
+        for i in range(startIndex, dataDim[0]):
+            subSeries = array[i, dataDim[1] - 1]
+            if reconstructed is None:
+                reconstructed = subSeries
+            else:
+                reconstructed = np.vstack([reconstructed, subSeries])
+        returnVals.append(reconstructed)
+    return returnVals
+
+def reconstruct_input_santafe(arrays,reconstructconfig):
+    reconstructDim = reconstructconfig['reconstruct_dim_x']
+    reconstructDelay = reconstructconfig['reconstruct_delay_x']
+    startIndex = 0
+    for i in range(reconstructDim):
+        if (reconstructDim - 1) * reconstructDelay > startIndex:
+            startIndex = (reconstructDim - 1) * reconstructDelay
+    returnVals = []
+    for array in arrays:
+        reconstructed = None
+        dataDim = array.shape
+        for i in range(startIndex, dataDim[0]):
+            subSeries = array[range(i, i - reconstructDelay * (reconstructDim - 1) - 1,
+                                    -reconstructDelay), 0]
+            if reconstructed is None:
+                reconstructed = subSeries
+            else:
+                reconstructed = np.vstack([reconstructed, subSeries])
+        returnVals.append(reconstructed)
+    return returnVals
+
+def reconstruct_output_santafe(arrays,reconstructconfig):
+    reconstructDim = [reconstructconfig['reconstruct_dim_x']]
+    reconstructDelay = [reconstructconfig['reconstruct_delay_x']]
     startIndex = 0
     for i in range(len(reconstructDim)):
         if (reconstructDim[i] - 1) * reconstructDelay[i] > startIndex:

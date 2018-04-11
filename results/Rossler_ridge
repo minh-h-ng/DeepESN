@@ -1,17 +1,9 @@
-1
-Traceback (most recent call last):
-  File "./esn_experiment.py", line 93, in <module>
-    main()
-  File "./esn_experiment.py", line 81, in main
-    errors = np.array(list(map(single_run, range(args.nexp))), dtype=float)
-  File "./esn_experiment.py", line 75, in single_run
-    _,error = deepesn.run_from_config(Xtr, Ytr, Xte, Yte, config, Yscaler)
-  File "/home/minh/PycharmProjects/DeepESN/deepesn.py", line 261, in run_from_config
-    deepesn.fit(Xtr, Ytr, n_drop=n_drop, regression_method=regression_method, regression_parameters=regression_parameters)
-  File "/home/minh/PycharmProjects/DeepESN/deepesn.py", line 85, in fit
-    regression_parameters = regression_parameters)
-  File "/home/minh/PycharmProjects/DeepESN/deepesn.py", line 129, in _fit_transform
-    states, embedded_states, _ = self._compute_state_matrix(X=Xtr, Y=Ytr, n_drop=n_drop)
-  File "/home/minh/PycharmProjects/DeepESN/deepesn.py", line 192, in _compute_state_matrix
-    state_before_tanh = curESN._internal_weights.dot(curESN._reservoir_state.T) + curESN._input_weights.dot(current_input.T) + \
-ValueError: shapes (101,9) and (101,1) not aligned: 9 (dim 1) != 101 (dim 0)
+Errors:
+[0.00026965 0.0002599  0.00029989 0.00025097 0.00027707 0.00027451
+ 0.00026285 0.00026897 0.00026996 0.0002697  0.00025657 0.00028298
+ 0.00024501 0.00027535 0.00026657 0.00028778 0.00026334 0.00027731
+ 0.00026738 0.00026642]
+Mean:
+0.0002696090371068072
+Std:
+1.2091443447798181e-05
